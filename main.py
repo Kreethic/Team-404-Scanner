@@ -53,7 +53,7 @@ def banner():
 |  $$$$$$/|  $$$$$$$|  $$$$$$$| $$  | $$| $$  | $$|  $$$$$$$| $$           
  \______/  \_______/ \_______/|__/  |__/|__/  |__/ \_______/|__/           
 {Color.RESET}
-{Color.MAGENTA}              404 Scanner  |  Team 404  |  Sentry Squad {Color.RESET}
+{Color.MAGENTA}              404 Scanner  | Powered by Team 404  |  Sentry Squad {Color.RESET}
 """)
 
 def divider(char="─", length=65, color=Color.CYAN):
