@@ -53,7 +53,7 @@ def banner():
 |  $$$$$$/|  $$$$$$$|  $$$$$$$| $$  | $$| $$  | $$|  $$$$$$$| $$           
  \______/  \_______/ \_______/|__/  |__/|__/  |__/ \_______/|__/           
 {Color.RESET}
-{Color.MAGENTA}              404 Scanner  | Powered by Team 404  |  Sentry Squad {Color.RESET}
+{Color.MAGENTA}              404 Scanner  |  Team 404  |  Sentry Squad{Color.RESET}
 """)
 
 def divider(char="─", length=65, color=Color.CYAN):
@@ -240,30 +240,66 @@ def scan_url(url: str) -> dict:
     log_info(f"Scanning URL: {url}")
     result = {"target": url, "type": "URL", "flags": [], "info": {}}
 
-    # URLhaus URL lookup (no key)
+    # Ensure URL has a scheme
+    lookup_url = url if url.startswith("http") else "http://" + url
+
+    # ── URLhaus URL lookup ──
     try:
         r = requests.post(
             "https://urlhaus-api.abuse.ch/v1/url/",
-            data={"url": url}, timeout=10
+            data={"url": lookup_url}, timeout=10
         )
         data = r.json()
         status = data.get("query_status", "")
 
-        if status == "is_host":
+        if status == "ok":
             result["flags"].append("URL found in URLhaus malware database")
-            result["info"]["URL Status"]   = data.get("url_status", "N/A")
-            result["info"]["Threat"]       = data.get("threat", "N/A")
+            url_status = data.get("url_status", "N/A")
+            result["info"]["URL Status"] = url_status
+            result["info"]["Threat"]     = data.get("threat", "N/A")
             tags = data.get("tags") or []
             if tags:
                 result["info"]["Tags"] = ", ".join(tags)
+            if url_status == "online":
+                result["flags"].append("URL is currently ACTIVE and serving malware!")
         elif status == "no_results":
-            result["info"]["URLhaus"] = "Not found in database (no known threats)"
+            result["info"]["URLhaus URL"] = "Not found in URL database"
+        else:
+            result["info"]["URLhaus URL"] = f"Status: {status}"
 
         log_success("URL check done!")
     except Exception as e:
         log_warn(f"URLhaus URL check failed: {e}")
 
-    # Heuristic checks
+    # ── URLhaus HOST lookup (catches malicious domains even if exact URL not listed) ──
+    try:
+        from urllib.parse import urlparse
+        parsed = urlparse(lookup_url)
+        host = parsed.hostname or lookup_url.split("/")[0]
+        if host:
+            r2 = requests.post(
+                "https://urlhaus-api.abuse.ch/v1/host/",
+                data={"host": host}, timeout=10
+            )
+            data2 = r2.json()
+            if data2.get("query_status") == "is_host":
+                urls_on_host = data2.get("urls", [])
+                online = [u for u in urls_on_host if u.get("url_status") == "online"]
+                tags2  = set()
+                for u in urls_on_host:
+                    tags2.update(u.get("tags") or [])
+                if online:
+                    result["flags"].append(f"Host has {len(online)} active malicious URL(s) on URLhaus")
+                elif urls_on_host:
+                    result["flags"].append(f"Host has {len(urls_on_host)} historical malicious URL(s) on URLhaus")
+                if tags2:
+                    result["info"]["Host Threat Tags"] = ", ".join(tags2)
+            else:
+                result["info"]["URLhaus Host"] = "Not found in host database"
+    except Exception as e:
+        log_warn(f"URLhaus host check failed: {e}")
+
+    # ── Heuristic checks ──
     suspicious_patterns = [
         (r"https?://\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}", "Direct IP address URL (suspicious)"),
         (r"@",                                              "URL contains @ symbol (phishing trick)"),
