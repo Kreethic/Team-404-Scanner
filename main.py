@@ -65,7 +65,7 @@ def banner():
         ███████║╚██████╗██║  ██║██║ ╚████║██║ ╚████║███████╗██║  ██║
         ╚══════╝ ╚═════╝╚═╝  ╚═╝╚═╝  ╚═══╝╚═╝  ╚═══╝╚══════╝╚═╝  ╚═╝
 
-        404 Scanner  | Powered by Team 404  | {Color.RESET}""")
+        404 Scanner  | Powered by Team 404  | Blue Team🛡️{Color.RESET}""")
 
 def divider(char="─", length=65, color=Color.CYAN):
     print(f"{color}{char * length}{Color.RESET}")
@@ -1519,7 +1519,7 @@ def main():
         show_menu()
         choice = get_choice()
         if choice == len(MENU_OPTIONS):
-            print(f"\n{Color.CYAN}Goodbye! Team 404 Scanner signing off.\n{Color.RESET}")
+            print(f"\n{Color.CYAN}Goodbye! Team 404 Scanner signing off.Stay Secure!🛡️\n{Color.RESET}")
             break
         run_scan(choice)
 
